@@ -1,0 +1,9 @@
+[submodule "Keyla-API"]
+	path = Keyla-API
+	url = https://github.com/Keyla-TTT/Keyla-API.git
+[submodule "Keyla-CLI"]
+	path = Keyla-CLI
+	url = https://github.com/Keyla-TTT/Keyla-CLI.git
+[submodule "Keyla-REPORT"]
+	path = Keyla-REPORT
+	url = https://github.com/Keyla-TTT/Keyla-REPORT.git

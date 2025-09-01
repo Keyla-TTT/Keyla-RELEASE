@@ -1,0 +1,60 @@
+name: Update Release Repo on New Release
+
+on:
+  repository_dispatch:
+    types: [new-release]
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: 'Repository name that released'
+        required: true
+      release_tag:
+        description: 'Release tag'
+        required: true
+
+jobs:
+  update-submodule:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release-repo
+        uses: actions/checkout@v4
+        with:
+          repository: Keyla-TTT/Keyla-RELEASE
+          token: ${{ secrets.PAT_TOKEN }}
+          submodules: true
+
+      - name: Update submodule to new release tag
+        run: |
+          REPO_NAME="${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}"
+          TAG_NAME="${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}"
+          
+          if [ "$REPO_NAME" = "Keyla-API" ]; then
+            cd api-submodule
+            git fetch --tags
+            git checkout $TAG_NAME
+            cd ..
+          elif [ "$REPO_NAME" = "Keyla-CLI" ]; then
+            cd cli-submodule  
+            git fetch --tags
+            git checkout $TAG_NAME
+            cd ..
+          elif [ "$REPO_NAME" = "Keyla-REPORT" ]; then
+            cd report-submodule
+            git fetch --tags
+            git checkout $TAG_NAME
+            cd ..
+          fi
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "Nessun cambiamento da committare"
+            exit 0
+          fi
+          git commit -m "Aggiorna $REPO_NAME a $TAG_NAME"
+          git push
