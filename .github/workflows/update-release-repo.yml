@@ -40,11 +40,6 @@ jobs:
             git fetch --tags
             git checkout $TAG_NAME
             cd ..
-          elif [ "$REPO_NAME" = "Keyla-REPORT" ]; then
-            cd report-submodule
-            git fetch --tags
-            git checkout $TAG_NAME
-            cd ..
           fi
 
       - name: Commit and push changes
