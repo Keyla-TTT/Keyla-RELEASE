@@ -65,5 +65,5 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-          git commit -m "Aggiorna $REPO_NAME a $TAG_NAME"
+          git commit -m "Update $REPO_NAME a $TAG_NAME"
           git push
