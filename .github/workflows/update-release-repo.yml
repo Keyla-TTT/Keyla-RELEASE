@@ -22,24 +22,38 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Keyla-TTT/Keyla-RELEASE
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
           submodules: true
 
       - name: Update submodule to new release tag
         run: |
           REPO_NAME="${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}"
           TAG_NAME="${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}"
-          
+
+          echo "Updating repository: $REPO_NAME to version: $TAG_NAME"
+
+          # Verify existing directories
+          echo "Possible Directories:"
+          ls -la
+
+          # Update the correct submodule 
           if [ "$REPO_NAME" = "Keyla-API" ]; then
-            cd api-submodule
-            git fetch --tags
-            git checkout $TAG_NAME
-            cd ..
+            SUBMODULE_DIR=$(find . -name "*api*" -type d | head -1)
           elif [ "$REPO_NAME" = "Keyla-CLI" ]; then
-            cd cli-submodule  
+            SUBMODULE_DIR=$(find . -name "*cli*" -type d | head -1)
+          elif [ "$REPO_NAME" = "Keyla-REPORT" ]; then
+            SUBMODULE_DIR=$(find . -name "*report*" -type d | head -1)
+          fi
+
+          if [ -n "$SUBMODULE_DIR" ]; then
+            echo "Update Submodule in: $SUBMODULE_DIR"
+            cd "$SUBMODULE_DIR"
             git fetch --tags
-            git checkout $TAG_NAME
+            git checkout "$TAG_NAME"
             cd ..
+          else
+            echo "Errore: Directory $REPO_NAME not found"
+            exit 1
           fi
 
       - name: Commit and push changes
@@ -48,7 +62,7 @@ jobs:
           git config user.email "github-actions@github.com"
           git add .
           if git diff --staged --quiet; then
-            echo "Nessun cambiamento da committare"
+            echo "No changes to commit"
             exit 0
           fi
           git commit -m "Aggiorna $REPO_NAME a $TAG_NAME"
