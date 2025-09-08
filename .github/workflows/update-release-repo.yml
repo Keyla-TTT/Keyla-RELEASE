@@ -50,11 +50,6 @@ jobs:
             git fetch --tags
             git checkout "$TAG_NAME"
             cd ..
-          elif [ "$REPO_NAME" = "Keyla-REPORT" ] && [ -d "Keyla-REPORT" ]; then
-            cd "Keyla-REPORT"
-            git fetch --tags
-            git checkout "$TAG_NAME"
-            cd ..
           else
             echo "Error: Directory $REPO_NAME not found"
             exit 1
@@ -72,49 +67,95 @@ jobs:
             git push
           fi
 
+      - name: Setup build tools
+        run: |
+          # Setup Java/Scala
+          java -version
+          
+          # Setup SBT se necessario
+          echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+          curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
+          sudo apt-get update
+          sudo apt-get install -y sbt
+
+      - name: Build assets if needed
+        run: |
+          # Compile Keyla-API if needed
+          if [ -d "Keyla-API" ] && [ ! -d "Keyla-API/target/universal" ]; then
+            cd Keyla-API
+            echo "Compiling of Keyla-API"
+            sbt Universal/packageBin
+            cd ..
+          fi
+          
+          # Compile Keyla-CLI if needed
+              if [ -d "Keyla-CLI" ] && [ ! -d "Keyla-CLI/dist" ] && [ ! -d "Keyla-CLI/build/bin" ]; then
+                cd Keyla-CLI
+                echo "Compiling of Keyla-CLI"
+                # Compiling only current OS 
+                if [ "$(uname)" == "Linux" ]; then
+                  ./gradlew linkReleaseExecutableLinuxX64
+                elif [ "$(uname)" == "Darwin" ]; then
+                  ./gradlew linkReleaseExecutableMacosX64
+                elif [ "$(uname)" == "Windows_NT" ]; then
+                  ./gradlew linkReleaseExecutableMingwX64
+                else
+                  echo "Os not recognized, compiling for linux"
+                  ./gradlew linkReleaseExecutableLinuxX64
+                fi
+
+                # Create dist directory and copy the native executable
+                mkdir -p dist
+                if [ "$(uname)" == "Windows_NT" ]; then
+                  cp build/bin/mingwX64/releaseExecutable/Keyla.exe dist/keyla-windows.exe
+                elif [ "$(uname)" == "Darwin" ]; then
+                  cp build/bin/macosX64/releaseExecutable/Keyla.kexe dist/keyla-macos
+                else
+                  cp build/bin/linuxX64/releaseExecutable/Keyla.kexe dist/keyla-linux
+                fi
+                cd ..
+              fi
+
       - name: Collect assets from all submodules
         run: |
           # Create directory for the assets
           mkdir -p ./release-assets
           
-          # Raccoglie asset da Keyla-API
+          # Collecting assets from Keyla-API
           if [ -d "Keyla-API" ]; then
             cd Keyla-API
             echo "Collecting assets from Keyla-API"
-            if [ -d "build/libs" ]; then
-              cp build/libs/*.jar ../release-assets/ || true
-            elif [ -d "target" ]; then
-              cp target/*.jar ../release-assets/ || true
+            if [ -d "Keyla-API/target/universal" ]; then
+              echo "Copia ZIP da target/universal"
+              cp Keyla-API/target/universal/*.zip ./release-assets/ || echo "Nessun ZIP trovato in target/universal"
             fi
-            cd ..
           fi
           
-          # Raccoglie asset da Keyla-CLI
+          # Collecting assets from Keyla-CLI
           if [ -d "Keyla-CLI" ]; then
-            cd Keyla-CLI
             echo "Collecting assets from Keyla-CLI"
-            if [ -d "target/scala-2.13" ]; then
-              cp target/scala-2.13/*.jar ../release-assets/ || true
-            elif [ -d "target" ]; then
-              cp target/*.jar ../release-assets/ || true
+            # For Keyla-CLI the assets are native exe in dist/
+            if [ -d "Keyla-CLI/dist" ]; then
+              echo "Copy native .exe from dist/"
+              cp Keyla-CLI/dist/* ./release-assets/ || echo "No executable found in dist/"
+            # Verify if native .exe files are in build/bin
+            elif [ -d "Keyla-CLI/build/bin" ]; then
+              echo "Searching for native .exe in build/bin"
+              # Search for all .exe and .kexe files in build/bin
+              find Keyla-CLI/build/bin -name "*.exe" -o -name "*.kexe" | while read file; do
+              echo "Found: $file"
+              cp "$file" ./release-assets/
+              done
+            else
+              echo "Directory with assets for Keyla-CLI not found"
             fi
-            cd ..
           fi
           
-          # Raccoglie asset da Keyla-REPORT
-          if [ -d "Keyla-REPORT" ]; then
-            cd Keyla-REPORT
-            echo "Collecting assets from Keyla-REPORT"
-            if [ -d "dist" ]; then
-              cp -r dist/* ../release-assets/ || true
-            elif [ -d "build" ]; then
-              cp -r build/* ../release-assets/ || true
-            fi
-            cd ..
-          fi
           
           echo "Assets collected:"
           ls -la ./release-assets
+          echo "Total dimension:"
+          du -sh ./release-assets
 
       - name: Create Release
         if: success()
@@ -126,7 +167,6 @@ jobs:
             Completed Release including:
             - API: $(cd Keyla-API && git describe --tags)
             - CLI: $(cd Keyla-CLI && git describe --tags)
-            - REPORT: $(cd Keyla-REPORT && git describe --tags)
             
             Updated with this release:
             - ${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}: ${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}
