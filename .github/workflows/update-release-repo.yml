@@ -67,3 +67,14 @@ jobs:
           fi
           git commit -m "Update $REPO_NAME to $TAG_NAME"
           git push
+
+      - name: Create Release
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: release-${{ github.run_number }}
+          name: Release ${{ github.run_number }}
+          body: |
+            Release che contiene:
+            - ${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}: ${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}
+          token: ${{ secrets.PAT_TOKEN }}
