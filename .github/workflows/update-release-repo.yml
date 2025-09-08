@@ -29,32 +29,36 @@ jobs:
         run: |
           REPO_NAME="${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}"
           TAG_NAME="${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}"
-
+          
           echo "Updating repository: $REPO_NAME to version: $TAG_NAME"
-
-          # Verify existence of the submodule directory
-          echo "Available directories:"
+          
+          # Verify existing directories
+          echo "Directory disponibili:"
           ls -la
-
-          # Navigate to the correct submodule directory
+          
+          # Create assets directory
+          mkdir -p ./release-assets
+          
+          # Update the specified submodule
           if [ "$REPO_NAME" = "Keyla-API" ] && [ -d "Keyla-API" ]; then
             cd "Keyla-API"
-            echo "Entered in Keyla-API directory"
+            git fetch --tags
+            git checkout "$TAG_NAME"
+            cd ..
           elif [ "$REPO_NAME" = "Keyla-CLI" ] && [ -d "Keyla-CLI" ]; then
             cd "Keyla-CLI"
-            echo "Entered in Keyla-CLI directory"
+            git fetch --tags
+            git checkout "$TAG_NAME"
+            cd ..
           elif [ "$REPO_NAME" = "Keyla-REPORT" ] && [ -d "Keyla-REPORT" ]; then
             cd "Keyla-REPORT"
-            echo "Entered in the Keyla-REPORT directory"
+            git fetch --tags
+            git checkout "$TAG_NAME"
+            cd ..
           else
             echo "Error: Directory $REPO_NAME not found"
             exit 1
           fi
-
-          # Checkout from the tag
-          git fetch --tags
-          git checkout "$TAG_NAME"
-          cd ..
 
       - name: Commit and push changes
         run: |
@@ -63,10 +67,54 @@ jobs:
           git add .
           if git diff --staged --quiet; then
             echo "No changes to commit"
-            exit 0
+          else
+            git commit -m "Update $REPO_NAME to $TAG_NAME"
+            git push
           fi
-          git commit -m "Update $REPO_NAME to $TAG_NAME"
-          git push
+
+      - name: Collect assets from all submodules
+        run: |
+          # Create directory for the assets
+          mkdir -p ./release-assets
+          
+          # Raccoglie asset da Keyla-API
+          if [ -d "Keyla-API" ]; then
+            cd Keyla-API
+            echo "Collecting assets from Keyla-API"
+            if [ -d "build/libs" ]; then
+              cp build/libs/*.jar ../release-assets/ || true
+            elif [ -d "target" ]; then
+              cp target/*.jar ../release-assets/ || true
+            fi
+            cd ..
+          fi
+          
+          # Raccoglie asset da Keyla-CLI
+          if [ -d "Keyla-CLI" ]; then
+            cd Keyla-CLI
+            echo "Collecting assets from Keyla-CLI"
+            if [ -d "target/scala-2.13" ]; then
+              cp target/scala-2.13/*.jar ../release-assets/ || true
+            elif [ -d "target" ]; then
+              cp target/*.jar ../release-assets/ || true
+            fi
+            cd ..
+          fi
+          
+          # Raccoglie asset da Keyla-REPORT
+          if [ -d "Keyla-REPORT" ]; then
+            cd Keyla-REPORT
+            echo "Collecting assets from Keyla-REPORT"
+            if [ -d "dist" ]; then
+              cp -r dist/* ../release-assets/ || true
+            elif [ -d "build" ]; then
+              cp -r build/* ../release-assets/ || true
+            fi
+            cd ..
+          fi
+          
+          echo "Assets collected:"
+          ls -la ./release-assets
 
       - name: Create Release
         if: success()
@@ -75,6 +123,13 @@ jobs:
           tag_name: release-${{ github.run_number }}
           name: Release ${{ github.run_number }}
           body: |
-            Release che contiene:
+            Completed Release including:
+            - API: $(cd Keyla-API && git describe --tags)
+            - CLI: $(cd Keyla-CLI && git describe --tags)
+            - REPORT: $(cd Keyla-REPORT && git describe --tags)
+            
+            Updated with this release:
             - ${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}: ${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}
           token: ${{ secrets.PAT_TOKEN }}
+          files: |
+            ./release-assets/*
