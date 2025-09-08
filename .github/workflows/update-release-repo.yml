@@ -78,6 +78,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y sbt
 
+          # Install dependencies for Kotlin/Native
+          sudo apt-get install -y libcurl4-openssl-dev zlib1g-dev
+
       - name: Build assets if needed
         run: |
           # Compile Keyla-API if needed
@@ -125,30 +128,33 @@ jobs:
           if [ -d "Keyla-API" ]; then
             cd Keyla-API
             echo "Collecting assets from Keyla-API"
-            if [ -d "Keyla-API/target/universal" ]; then
-              echo "Copia ZIP da target/universal"
-              cp Keyla-API/target/universal/*.zip ./release-assets/ || echo "Nessun ZIP trovato in target/universal"
+            if [ -d "target/universal" ]; then
+              echo "Copy ZIP from target/universal"
+              cp target/universal/*.zip ../release-assets/ || echo "No ZIP found in target/universal"
             fi
+            cd ..
           fi
           
           # Collecting assets from Keyla-CLI
           if [ -d "Keyla-CLI" ]; then
+            cd Keyla-CLI
             echo "Collecting assets from Keyla-CLI"
             # For Keyla-CLI the assets are native exe in dist/
-            if [ -d "Keyla-CLI/dist" ]; then
+            if [ -d "dist" ]; then
               echo "Copy native .exe from dist/"
-              cp Keyla-CLI/dist/* ./release-assets/ || echo "No executable found in dist/"
+              cp dist/* ../release-assets/ || echo "No executable found in dist/"
             # Verify if native .exe files are in build/bin
-            elif [ -d "Keyla-CLI/build/bin" ]; then
+            elif [ -d "build/bin" ]; then
               echo "Searching for native .exe in build/bin"
               # Search for all .exe and .kexe files in build/bin
-              find Keyla-CLI/build/bin -name "*.exe" -o -name "*.kexe" | while read file; do
+              find build/bin -name "*.exe" -o -name "*.kexe" | while read file; do
               echo "Found: $file"
-              cp "$file" ./release-assets/
+              cp "$file" ../release-assets/
               done
             else
               echo "Directory with assets for Keyla-CLI not found"
             fi
+            cd ..
           fi
           
           
