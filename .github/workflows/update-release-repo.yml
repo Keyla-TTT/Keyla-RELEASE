@@ -32,29 +32,29 @@ jobs:
 
           echo "Updating repository: $REPO_NAME to version: $TAG_NAME"
 
-          # Verify existing directories
-          echo "Possible Directories:"
+          # Verify existence of the submodule directory
+          echo "Available directories:"
           ls -la
 
-          # Update the correct submodule 
-          if [ "$REPO_NAME" = "Keyla-API" ]; then
-            SUBMODULE_DIR=$(find . -name "*api*" -type d | head -1)
-          elif [ "$REPO_NAME" = "Keyla-CLI" ]; then
-            SUBMODULE_DIR=$(find . -name "*cli*" -type d | head -1)
-          elif [ "$REPO_NAME" = "Keyla-REPORT" ]; then
-            SUBMODULE_DIR=$(find . -name "*report*" -type d | head -1)
-          fi
-
-          if [ -n "$SUBMODULE_DIR" ]; then
-            echo "Update Submodule in: $SUBMODULE_DIR"
-            cd "$SUBMODULE_DIR"
-            git fetch --tags
-            git checkout "$TAG_NAME"
-            cd ..
+          # Navigate to the correct submodule directory
+          if [ "$REPO_NAME" = "Keyla-API" ] && [ -d "Keyla-API" ]; then
+            cd "Keyla-API"
+            echo "Entered in Keyla-API directory"
+          elif [ "$REPO_NAME" = "Keyla-CLI" ] && [ -d "Keyla-CLI" ]; then
+            cd "Keyla-CLI"
+            echo "Entered in Keyla-CLI directory"
+          elif [ "$REPO_NAME" = "Keyla-REPORT" ] && [ -d "Keyla-REPORT" ]; then
+            cd "Keyla-REPORT"
+            echo "Entered in the Keyla-REPORT directory"
           else
-            echo "Errore: Directory $REPO_NAME not found"
+            echo "Error: Directory $REPO_NAME not found"
             exit 1
           fi
+
+          # Checkout from the tag
+          git fetch --tags
+          git checkout "$TAG_NAME"
+          cd ..
 
       - name: Commit and push changes
         run: |
@@ -65,5 +65,5 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-          git commit -m "Update $REPO_NAME a $TAG_NAME"
+          git commit -m "Update $REPO_NAME to $TAG_NAME"
           git push
