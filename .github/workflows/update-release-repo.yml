@@ -99,7 +99,7 @@ jobs:
                 echo "Compiling for Linux"  
                 ./gradlew linkReleaseExecutableLinuxX64
                 echo "Compiling for MacOS"  
-                ./gradlew linkReleaseExecutableMacosX64
+                ./gradlew linkReleaseExecutableMacosArm64
                 echo "Compiling for Windows"  
                 ./gradlew linkReleaseExecutableMingwX64
                 
@@ -108,7 +108,7 @@ jobs:
                 if [ "$(uname)" == "Windows_NT" ]; then
                   cp build/bin/mingwX64/releaseExecutable/Keyla.exe dist/keyla-windows.exe
                 if [ "$(uname)" == "Darwin" ]; then
-                  cp build/bin/macosX64/releaseExecutable/Keyla.kexe dist/keyla-macos
+                  cp build/bin/macosArm64/releaseExecutable/Keyla.kexe dist/keyla-macos-arm64
                 if
                   cp build/bin/linuxX64/releaseExecutable/Keyla.kexe dist/keyla-linux
                 fi
