@@ -107,8 +107,10 @@ jobs:
                 mkdir -p dist
                 if [ "$(uname)" == "Windows_NT" ]; then
                   cp build/bin/mingwX64/releaseExecutable/Keyla.exe dist/keyla-windows.exe
+                fi
                 if [ "$(uname)" == "Darwin" ]; then
                   cp build/bin/macosArm64/releaseExecutable/Keyla.kexe dist/keyla-macos-arm64
+                fi
                 if
                   cp build/bin/linuxX64/releaseExecutable/Keyla.kexe dist/keyla-linux
                 fi
