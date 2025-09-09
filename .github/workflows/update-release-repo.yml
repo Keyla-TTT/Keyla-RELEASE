@@ -105,13 +105,14 @@ jobs:
                 
                 # Create dist directory and copy the native executable
                 mkdir -p dist
-                if [ "$(uname)" == "Windows_NT" ]; then
+          
+                if [ -f "build/bin/mingwX64/releaseExecutable/Keyla.exe" ]; then
                   cp build/bin/mingwX64/releaseExecutable/Keyla.exe dist/keyla-windows.exe
                 fi
-                if [ "$(uname)" == "Darwin" ]; then
+                if [ -f "build/bin/macosArm64/releaseExecutable/Keyla.kexe" ]; then
                   cp build/bin/macosArm64/releaseExecutable/Keyla.kexe dist/keyla-macos-arm64
                 fi
-                if
+                if [ -f "build/bin/linuxX64/releaseExecutable/Keyla.kexe" ]; then
                   cp build/bin/linuxX64/releaseExecutable/Keyla.kexe dist/keyla-linux
                 fi
                 
