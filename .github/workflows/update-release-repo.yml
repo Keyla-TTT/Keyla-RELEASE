@@ -95,27 +95,27 @@ jobs:
               if [ -d "Keyla-CLI" ] && [ ! -d "Keyla-CLI/dist" ] && [ ! -d "Keyla-CLI/build/bin" ]; then
                 cd Keyla-CLI
                 echo "Compiling of Keyla-CLI"
-                # Compiling only current OS 
-                if [ "$(uname)" == "Linux" ]; then
-                  ./gradlew linkReleaseExecutableLinuxX64
-                elif [ "$(uname)" == "Darwin" ]; then
-                  ./gradlew linkReleaseExecutableMacosX64
-                elif [ "$(uname)" == "Windows_NT" ]; then
-                  ./gradlew linkReleaseExecutableMingwX64
-                else
-                  echo "Os not recognized, compiling for linux"
-                  ./gradlew linkReleaseExecutableLinuxX64
-                fi
-
+          
+                echo "Compiling for Linux"  
+                ./gradlew linkReleaseExecutableLinuxX64
+                echo "Compiling for MacOS"  
+                ./gradlew linkReleaseExecutableMacosX64
+                echo "Compiling for Windows"  
+                ./gradlew linkReleaseExecutableMingwX64
+                
                 # Create dist directory and copy the native executable
                 mkdir -p dist
                 if [ "$(uname)" == "Windows_NT" ]; then
                   cp build/bin/mingwX64/releaseExecutable/Keyla.exe dist/keyla-windows.exe
-                elif [ "$(uname)" == "Darwin" ]; then
+                if [ "$(uname)" == "Darwin" ]; then
                   cp build/bin/macosX64/releaseExecutable/Keyla.kexe dist/keyla-macos
-                else
+                if
                   cp build/bin/linuxX64/releaseExecutable/Keyla.kexe dist/keyla-linux
                 fi
+                
+                echo "Compiled binaries in dist directory:"
+                ls -la dist/ 
+          
                 cd ..
               fi
 
@@ -171,8 +171,8 @@ jobs:
           name: Release ${{ github.run_number }}
           body: |
             Completed Release including:
-            - API: $(cd Keyla-API && git describe --tags)
-            - CLI: $(cd Keyla-CLI && git describe --tags)
+            - API: https://github.com/Keyla-TTT/Keyla-API/releases
+            - CLI: https://github.com/Keyla-TTT/Keyla-CLI/releases
             
             Updated with this release:
             - ${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}: ${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}
