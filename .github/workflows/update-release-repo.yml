@@ -117,9 +117,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:${{ steps.prep_tag.outputs.release_tag }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:${{ steps.prep_tag.outputs.release_tag }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -132,6 +130,5 @@ jobs:
             - CLI Tag: ${{ steps.tags.outputs.cli_tag }}
 
             Docker image available on Docker Hub:
-            - `${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:latest`
             - `${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:${{ steps.prep_tag.outputs.release_tag }}`
           token: ${{ secrets.PAT_TOKEN }}
