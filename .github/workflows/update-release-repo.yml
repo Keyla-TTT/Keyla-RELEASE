@@ -29,7 +29,7 @@ jobs:
         run: |
           API_TAG=""
           CLI_TAG=""
-
+          
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "Manual trigger. Using workflow-inputs."
             API_TAG="${INPUT_API_TAG:-latest}"
@@ -48,12 +48,22 @@ jobs:
               API_TAG=$(gh release view --repo Keyla-TTT/Keyla-API --json tagName -q .tagName)
             fi
           fi
-
+          
+          if [[ "$API_TAG" == "latest" ]]; then
+            echo "Resolving latest tag for Keyla-API..."
+            API_TAG=$(gh release view --repo Keyla-TTT/Keyla-API --json tagName -q .tagName)
+          fi
+          
+          if [[ "$CLI_TAG" == "latest" ]]; then
+            echo "Resolving latest tag for Keyla-CLI..."
+            CLI_TAG=$(gh release view --repo Keyla-TTT/Keyla-CLI --json tagName -q .tagName)
+          fi
+          
           if [ -z "$API_TAG" ] || [ -z "$CLI_TAG" ]; then
              echo "Error: Could not determine one or both release tags."
              exit 1
           fi
-
+          
           echo "Final API Tag: $API_TAG"
           echo "Final CLI Tag: $CLI_TAG"
           echo "api_tag=$API_TAG" >> $GITHUB_OUTPUT
