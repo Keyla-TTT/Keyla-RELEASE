@@ -5,180 +5,133 @@ on:
     types: [new-release]
   workflow_dispatch:
     inputs:
-      repository_name:
-        description: 'Repository name that released'
-        required: true
-      release_tag:
-        description: 'Release tag'
-        required: true
+      api_release_tag:
+        description: 'Keyla-API release tag (e.g., v1.6.0). Default is latest.'
+        required: false
+        default: 'latest'
+      cli_release_tag:
+        description: 'Keyla-CLI release tag (e.g., v1.2.0). Default is latest.'
+        required: false
+        default: 'latest'
 
 jobs:
-  update-submodule:
+  build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     steps:
-      - name: Checkout release-repo
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          repository: Keyla-TTT/Keyla-RELEASE
-          token: ${{ secrets.PAT_TOKEN }}
-          submodules: true
 
-      - name: Update submodule to new release tag
+      - name: Resolve Release Tags
+        id: tags
         run: |
-          REPO_NAME="${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}"
-          TAG_NAME="${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}"
-          
-          echo "Updating repository: $REPO_NAME to version: $TAG_NAME"
-          
-          # Verify existing directories
-          echo "Directory disponibili:"
-          ls -la
-          
-          # Create assets directory
-          mkdir -p ./release-assets
-          
-          # Update the specified submodule
-          if [ "$REPO_NAME" = "Keyla-API" ] && [ -d "Keyla-API" ]; then
-            cd "Keyla-API"
-            git fetch --tags
-            git checkout "$TAG_NAME"
-            cd ..
-          elif [ "$REPO_NAME" = "Keyla-CLI" ] && [ -d "Keyla-CLI" ]; then
-            cd "Keyla-CLI"
-            git fetch --tags
-            git checkout "$TAG_NAME"
-            cd ..
-          else
-            echo "Error: Directory $REPO_NAME not found"
-            exit 1
-          fi
+          API_TAG=""
+          CLI_TAG=""
 
-      - name: Commit and push changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update $REPO_NAME to $TAG_NAME"
-            git push
-          fi
-
-      - name: Setup build tools
-        run: |
-          # Setup Java/Scala
-          java -version
-          
-          # Setup SBT se necessario
-          echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
-          curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
-          sudo apt-get update
-          sudo apt-get install -y sbt
-
-          # Install dependencies for Kotlin/Native
-          sudo apt-get install -y libcurl4-openssl-dev zlib1g-dev
-
-      - name: Build assets if needed
-        run: |
-          # Compile Keyla-API if needed
-          if [ -d "Keyla-API" ] && [ ! -d "Keyla-API/target/universal" ]; then
-            cd Keyla-API
-            echo "Compiling of Keyla-API"
-            sbt Universal/packageBin
-            cd ..
-          fi
-          
-          # Compile Keyla-CLI if needed
-              if [ -d "Keyla-CLI" ] && [ ! -d "Keyla-CLI/dist" ] && [ ! -d "Keyla-CLI/build/bin" ]; then
-                cd Keyla-CLI
-                echo "Compiling of Keyla-CLI"
-          
-                echo "Compiling for Linux"  
-                ./gradlew linkReleaseExecutableLinuxX64
-                echo "Compiling for MacOS"  
-                ./gradlew linkReleaseExecutableMacosArm64
-                echo "Compiling for Windows"  
-                ./gradlew linkReleaseExecutableMingwX64
-                
-                # Create dist directory and copy the native executable
-                mkdir -p dist
-          
-                if [ -f "build/bin/mingwX64/releaseExecutable/Keyla.exe" ]; then
-                  cp build/bin/mingwX64/releaseExecutable/Keyla.exe dist/keyla-windows.exe
-                fi
-                if [ -f "build/bin/macosArm64/releaseExecutable/Keyla.kexe" ]; then
-                  cp build/bin/macosArm64/releaseExecutable/Keyla.kexe dist/keyla-macos-arm64
-                fi
-                if [ -f "build/bin/linuxX64/releaseExecutable/Keyla.kexe" ]; then
-                  cp build/bin/linuxX64/releaseExecutable/Keyla.kexe dist/keyla-linux
-                fi
-                
-                echo "Compiled binaries in dist directory:"
-                ls -la dist/ 
-          
-                cd ..
-              fi
-
-      - name: Collect assets from all submodules
-        run: |
-          # Create directory for the assets
-          mkdir -p ./release-assets
-          
-          # Collecting assets from Keyla-API
-          if [ -d "Keyla-API" ]; then
-            cd Keyla-API
-            echo "Collecting assets from Keyla-API"
-            if [ -d "target/universal" ]; then
-              echo "Copy ZIP from target/universal"
-              cp target/universal/*.zip ../release-assets/ || echo "No ZIP found in target/universal"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Manual trigger. Using workflow-inputs."
+            API_TAG="${INPUT_API_TAG:-latest}"
+            CLI_TAG="${INPUT_CLI_TAG:-latest}"
+          elif [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            echo "Automatic trigger from repository_dispatch."
+            if [ -n "${{ github.event.client_payload.api_release_tag }}" ]; then
+              echo "Triggered by Keyla-API release."
+              API_TAG="${{ github.event.client_payload.api_release_tag }}"
+              echo "Fetching latest Keyla-CLI release tag..."
+              CLI_TAG=$(gh release view --repo Keyla-TTT/Keyla-CLI --json tagName -q .tagName)
+            elif [ -n "${{ github.event.client_payload.cli_release_tag }}" ]; then
+              echo "Triggered by Keyla-CLI release."
+              CLI_TAG="${{ github.event.client_payload.cli_release_tag }}"
+              echo "Fetching latest Keyla-API release tag..."
+              API_TAG=$(gh release view --repo Keyla-TTT/Keyla-API --json tagName -q .tagName)
             fi
-            cd ..
           fi
-          
-          # Collecting assets from Keyla-CLI
-          if [ -d "Keyla-CLI" ]; then
-            cd Keyla-CLI
-            echo "Collecting assets from Keyla-CLI"
-            # For Keyla-CLI the assets are native exe in dist/
-            if [ -d "dist" ]; then
-              echo "Copy native .exe from dist/"
-              cp dist/* ../release-assets/ || echo "No executable found in dist/"
-            # Verify if native .exe files are in build/bin
-            elif [ -d "build/bin" ]; then
-              echo "Searching for native .exe in build/bin"
-              # Search for all .exe and .kexe files in build/bin
-              find build/bin -name "*.exe" -o -name "*.kexe" | while read file; do
-              echo "Found: $file"
-              cp "$file" ../release-assets/
-              done
-            else
-              echo "Directory with assets for Keyla-CLI not found"
-            fi
-            cd ..
-          fi
-          
-          
-          echo "Assets collected:"
-          ls -la ./release-assets
-          echo "Total dimension:"
-          du -sh ./release-assets
 
-      - name: Create Release
-        if: success()
-        uses: softprops/action-gh-release@v1
+          if [ -z "$API_TAG" ] || [ -z "$CLI_TAG" ]; then
+             echo "Error: Could not determine one or both release tags."
+             exit 1
+          fi
+
+          echo "Final API Tag: $API_TAG"
+          echo "Final CLI Tag: $CLI_TAG"
+          echo "api_tag=$API_TAG" >> $GITHUB_OUTPUT
+          echo "cli_tag=$CLI_TAG" >> $GITHUB_OUTPUT
+        env:
+          INPUT_API_TAG: ${{ github.event.inputs.api_release_tag }}
+          INPUT_CLI_TAG: ${{ github.event.inputs.cli_release_tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release assets directory
+        run: mkdir -p ./release-assets
+
+      - name: Download Keyla-API Release Asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Downloading Keyla-API asset for tag: ${{ steps.tags.outputs.api_tag }}"
+          gh release download "${{ steps.tags.outputs.api_tag }}" \
+            --repo Keyla-TTT/Keyla-API \
+            --pattern "*.zip" \
+            --output ./release-assets/keyla-api.zip
+
+      - name: Download Keyla-CLI Release Assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Downloading Keyla-CLI assets for tag: ${{ steps.tags.outputs.cli_tag }}"
+          gh release download "${{ steps.tags.outputs.cli_tag }}" \
+            --repo Keyla-TTT/Keyla-CLI \
+            --pattern "keyla-*" \
+            --dir ./release-assets
+
+      - name: List downloaded assets
+        run: ls -la ./release-assets
+
+      - name: Prepare Release Tag
+        id: prep_tag
+        run: |
+          API_VERSION=${{ steps.tags.outputs.api_tag }}
+          CLI_VERSION=${{ steps.tags.outputs.cli_tag }}
+          # Remove 'v' prefix from both tags
+          API_NUM=${API_VERSION#v}
+          CLI_NUM=${CLI_VERSION#v}
+          # Create the new tag as v<api_version>.<cli_version>
+          NEW_TAG="v${API_NUM}.${CLI_NUM}"
+          echo "release_tag=${NEW_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          tag_name: release-${{ github.run_number }}
-          name: Release ${{ github.run_number }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        id: docker_build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:${{ steps.prep_tag.outputs.release_tag }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep_tag.outputs.release_tag }}
+          name: Release ${{ steps.prep_tag.outputs.release_tag }}
           body: |
-            Completed Release including:
-            - API: https://github.com/Keyla-TTT/Keyla-API/releases
-            - CLI: https://github.com/Keyla-TTT/Keyla-CLI/releases
-            
-            Updated with this release:
-            - ${{ github.event.client_payload.repository_name || github.event.inputs.repository_name }}: ${{ github.event.client_payload.release_tag || github.event.inputs.release_tag }}
+            Docker Release based on:
+            - API Tag: ${{ steps.tags.outputs.api_tag }}
+            - CLI Tag: ${{ steps.tags.outputs.cli_tag }}
+
+            Docker image available on Docker Hub:
+            - `${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:latest`
+            - `${{ secrets.DOCKERHUB_USERNAME }}/keyla-release:${{ steps.prep_tag.outputs.release_tag }}`
           token: ${{ secrets.PAT_TOKEN }}
-          files: |
-            ./release-assets/*
