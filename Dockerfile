@@ -25,10 +25,10 @@ RUN cp keyla-linux /usr/local/bin/keyla
 WORKDIR /app
 
 # Unzip the API .zip file and run the backend.
-RUN chmod +x /app/istall.sh
+RUN chmod +x /app/scripts/istall.sh
 
 # Create a start script that runs the backend API server in background
-RUN chmod +x /app/start.sh
+RUN chmod +x /app/scripts/start.sh
 
 # Execute the backend API server in the background and keep container running
-ENTRYPOINT ["/app/start.sh"]
+ENTRYPOINT ["/app/scripts/start.sh"]
