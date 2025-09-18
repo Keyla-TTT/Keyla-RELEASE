@@ -16,7 +16,7 @@ COPY ./scripts/* ./scripts/
 # Add a volume for external dictionaries.
 # The user can mount their own dictionary files here.
 VOLUME /home/keyla/dictionaries
-COPY /dictionaries/* /home/keyla/dictionaries/
+COPY dictionaries/* /home/keyla/dictionaries/
 
 # Install keyla command
 RUN chmod +x keyla-linux
