@@ -19,8 +19,10 @@ VOLUME /home/keyla/dictionaries
 COPY dictionaries/* /home/keyla/dictionaries/
 
 # Install keyla command
+WORKDIR /app/assets
 RUN chmod +x keyla-linux
 RUN cp keyla-linux /usr/local/bin/keyla
+WORKDIR /app
 
 # Unzip the API .zip file and run the backend.
 RUN chmod +x /app/istall.sh
