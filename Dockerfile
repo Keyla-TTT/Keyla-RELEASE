@@ -27,6 +27,8 @@ WORKDIR /app
 # Unzip the API .zip file and run the backend.
 RUN chmod +x /app/scripts/install.sh
 
+RUN /app/scripts/install.sh
+
 # Create a start script that runs the backend API server in background
 RUN chmod +x /app/scripts/start.sh
 
