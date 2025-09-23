@@ -78,7 +78,7 @@ jobs:
 
       - name: Download Keyla-API Release Asset
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           echo "Downloading Keyla-API asset for tag: ${{ steps.tags.outputs.api_tag }}"
           gh release download "${{ steps.tags.outputs.api_tag }}" \
