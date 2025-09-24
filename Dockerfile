@@ -15,8 +15,8 @@ COPY ./scripts/* ./scripts/
 
 # Add a volume for external dictionaries.
 # The user can mount their own dictionary files here.
-VOLUME /home/keyla/dictionaries
-COPY dictionaries/* /home/keyla/dictionaries/
+VOLUME /root/keyla/dictionaries
+COPY dictionaries/* /root/keyla/dictionaries/
 
 # Install keyla command
 WORKDIR /app/assets
