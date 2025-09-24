@@ -32,5 +32,8 @@ RUN /app/scripts/install.sh
 # Create a start script that runs the backend API server in background
 RUN chmod +x /app/scripts/start.sh
 
+# Expose the port that the backend API server listens on
+EXPOSE 9999
+
 # Execute the backend API server in the background and keep container running
 ENTRYPOINT ["/app/scripts/start.sh"]
