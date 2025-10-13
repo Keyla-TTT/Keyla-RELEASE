@@ -90,13 +90,6 @@ keyla help
 
 ## 🔧 Troubleshooting
 
-### Container Issues
-If the Docker container stops unexpectedly:
-```bash
-docker logs keyla-backend
-docker restart keyla-backend
-```
-
 ### CLI Connection Issues
 If the CLI can't connect to the backend:
 1. Ensure the container is running: `docker ps`
