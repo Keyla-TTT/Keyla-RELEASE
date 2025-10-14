@@ -17,9 +17,10 @@ mongod --bind_ip 0.0.0.0 --dbpath /data/db --logpath /var/log/mongodb.log --fork
     cd /app/assets || true
     if compgen -G "api-scala-*/bin" > /dev/null; then
       cd api-scala-*/bin || true
-      ./Keyla-api > /dev/null 2>&1 &
+      ./Keyla-api </dev/null >/dev/null 2>&1 &
       cd ../.. || true
     fi
   fi
 ) &
+stty sane || true
 exec /bin/bash
