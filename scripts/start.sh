@@ -21,5 +21,5 @@ cd api-scala-*/bin
 ./Keyla-api > /dev/null 2>&1 &
 cd ../..
 
-# Keep container running
-tail -f /var/log/mongodb.log
+# Drop into an interactive shell (keeps container running)
+exec /bin/bash
