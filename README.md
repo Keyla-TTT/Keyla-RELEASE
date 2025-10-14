@@ -63,6 +63,8 @@ keyla config  # Configure the backend URL
 keyla test    # Start typing tests
 ```
 
+**Important (MongoDB):** If you want to use MongoDB persistence when installing locally, a MongoDB service must be running on your machine or accessible remotely. Set `database.mongoUri` (e.g., `mongodb://localhost:27017`) and ensure `database.useMongoDb` is set according to your needs. If you do not want persistence, set `database.useMongoDb` to `false`.
+
 ## 📋 Available Commands
 
 Run `keyla help` to see all available commands:
