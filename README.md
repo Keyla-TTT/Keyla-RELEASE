@@ -22,7 +22,7 @@ docker run -d --name keyla-backend keylattt/keyla
 ```
 
 #### Step 2: Install Keyla CLI Locally
-Follow the installation instructions in the [Keyla-CLI README](Keyla-CLI/README.md) to install the CLI on your local machine.
+Follow the installation instructions in the [Keyla-CLI README](https://github.com/Keyla-TTT/Keyla-CLI/blob/main/README.md) to install the CLI on your local machine.
 
 #### Step 3: Start Typing!
 ```bash
@@ -52,10 +52,10 @@ This will:
 For advanced users who want full control over the installation.
 
 #### Step 1: Install the Backend
-Follow the installation instructions in the [Keyla-API README](Keyla-API/README.md) to set up the backend API on your local machine.
+Follow the installation instructions in the [Keyla-API README]([Keyla-API/README.md](https://github.com/Keyla-TTT/Keyla-API/blob/main/README.md)) to set up the backend API on your local machine.
 
 #### Step 2: Install the CLI
-Follow the installation instructions in the [Keyla-CLI README](Keyla-CLI/README.md) to install the CLI.
+Follow the installation instructions in the [Keyla-CLI README]([Keyla-CLI/README.md](https://github.com/Keyla-TTT/Keyla-CLI/blob/main/README.md)) to install the CLI.
 
 #### Step 3: Configure and Run
 ```bash
